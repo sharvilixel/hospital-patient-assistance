@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Smart Patient Assistance Dashboard</title>
+
+    <!-- ===== EXTERNAL CSS ===== -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+
+    <!-- ============================================
+    NOTIFICATION ICON
+    ============================================ -->
+    <div class="notification-container" onclick="toggleNotifications()">
+        <div class="notification-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span class="notification-badge" id="notifCount">0</span>
+        </div>
+    </div>
+
+    <!-- ===== OVERLAY ===== -->
+    <div class="overlay" id="overlay" onclick="toggleNotifications()"></div>
+
+    <!-- ===== NOTIFICATION PANEL ===== -->
+    <!-- ===== NOTIFICATION PANEL ===== -->
+<div class="notification-panel" id="notificationPanel">
+    <div class="notification-header">
+        <h2> Notifications</h2>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <button class="mark-all" onclick="markAllAsRead()">Mark all read</button>
+            <button class="clear-all" onclick="clearAllNotifications()" style="background: #dc2626; color: white; border: none; padding: 5px 14px; border-radius: 30px; cursor: pointer; font-weight: 600; font-size: 12px; transition: 0.2s;">
+                 Clear All
+            </button>
+            <button class="close-btn" onclick="toggleNotifications()">✕</button>
+        </div>
+    </div>
+    <div id="notificationList">
+        <div class="no-notifications">No notifications</div>
+    </div>
+</div>
+    <!-- ============================================
+    MAIN TITLE
+    ============================================ -->
+  <!-- ============================================
+MAIN TITLE
+============================================ -->
+<div class="main-title">
+    <h1>Smart Patient Assistance</h1>
+    <div class="subtitle">Staff Command Center</div>
+    <!-- NEW: Time displayed right below the subtitle -->
+    <div class="header-time" id="currentTime">10:55:45 AM</div>
+</div>
+    <!-- ============================================
+    NAVIGATION (UPDATED with "Patient")
+    ============================================ -->
+    <div class="nav-bar">
+        <button class="nav-btn active" onclick="showPage('dashboard')" id="navDashboard">Dashboard</button>
+        <button class="nav-btn" onclick="showPage('staff')" id="navStaff">Staff</button>
+        <button class="nav-btn" onclick="showPage('patient')" id="navPatient">Patient</button>   <!-- NEW -->
+        <button class="nav-btn" onclick="showPage('about')" id="navAbout">About</button>
+        <button class="nav-btn" onclick="showPage('contact')" id="navContact">Contact</button>
+        <button class="nav-btn" onclick="showPage('settings')" id="navSettings">Settings</button>
+    </div>
+
+    <!-- ============================================
+    STATS BAR
+    ============================================ -->
+    <div class="stats-bar">
+        <div class="stat-item">Requests: <span class="num" id="totalPatients">0</span></div>
+        <div class="stat-item">Pending: <span class="num" id="totalPending">0</span></div>
+        <div class="stat-item">Accepted: <span class="num" id="totalAccepted">0</span></div>
+        <div class="stat-item">Completed: <span class="num" id="totalWorkDone">0</span></div>
+        <div class="stat-item">Cancelled: <span class="num" id="totalCancelled">0</span></div>
+        <div class="stat-item">Staff: <span class="num" id="totalStaff">0</span></div>
+        <div class="stat-item">Available: <span class="num" id="availableStaff">0</span></div>
+        
+    </div>
+
+    <!-- ============================================
+    DASHBOARD PAGE (Active Requests)
+    ============================================ -->
+    <div class="page-section active" id="pageDashboard">
+        <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search patient or room..." />
+        </div>
+        <div class="container" id="patientContainer">
+            <!-- Cards injected by JS -->
+        </div>
+    </div>
+
+    <!-- ============================================
+    STAFF PAGE
+    ============================================ -->
+    <div class="page-section" id="pageStaff">
+        <div class="container">
+            <div class="staff-grid" id="staffGrid"></div>
+        </div>
+    </div>
+
+    <!-- ============================================
+PATIENT PAGE (Manage Access)
+============================================ -->
+<div class="page-section" id="pagePatient">
+    <div class="container">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin:0;">Manage Patient Room Access</h2>
+            </div>
+            
+            <!-- GRANT ACCESS -->
+            <div class="patient-access-form" style="background: var(--bg-input); padding: 20px; border-radius: 12px; margin-bottom: 16px;">
+                <h4 style="color: var(--text-primary); margin-bottom: 12px;">✅ Grant Access</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                    <input type="text" id="patientNameInput" placeholder="Patient Full Name" style="flex:2; min-width: 180px;" />
+                    <input type="text" id="patientRoomInput" placeholder="Room Number (e.g., 101)" style="flex:1; min-width: 120px;" />
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-accept" onclick="grantAccess()" style="flex:1; min-width: 120px;">Grant Access</button>
+                    <button class="btn btn-reset" onclick="document.getElementById('patientNameInput').value=''; document.getElementById('patientRoomInput').value='';" style="flex:1; min-width: 100px;">Clear</button>
+                </div>
+                <div id="patientAccessMessage" style="margin-top: 10px; font-weight: 500;"></div>
+            </div>
+
+            <!-- REVOKE ACCESS -->
+            <div class="patient-access-form" style="background: var(--bg-input); padding: 20px; border-radius: 12px; border: 1px solid var(--accent-red);">
+                <h4 style="color: var(--accent-red); margin-bottom: 12px;">⛔ Revoke Access</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+                    <input type="text" id="revokeRoomInput" placeholder="Room Number (e.g., 101)" style="flex:1; min-width: 150px;" />
+                    <span style="color: var(--text-muted); font-size: 13px; display: flex; align-items: center; padding-left: 4px;">
+                        (or enter patient name below)
+                    </span>
+                    <input type="text" id="revokePatientInput" placeholder="Patient Name" style="flex:1; min-width: 150px;" />
+                </div>
+                <div style="display: flex; gap: 12px; margin-top: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-cancel" onclick="revokeAccess()" style="flex:1; min-width: 120px;">Revoke Access</button>
+                    <button class="btn btn-reset" onclick="document.getElementById('revokeRoomInput').value=''; document.getElementById('revokePatientInput').value='';" style="flex:1; min-width: 100px;">Clear</button>
+                </div>
+                <div id="revokeAccessMessage" style="margin-top: 10px; font-weight: 500;"></div>
+            </div>
+
+            <!-- Active Rooms List -->
+            <div style="margin-top: 25px;">
+                <h3 style="color: var(--text-primary); margin-bottom: 12px;">Active Rooms</h3>
+                <div id="roomListContainer" style="max-height: 300px; overflow-y: auto;">
+                    <div class="log-empty">Loading rooms...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- ============================================
+    ABOUT PAGE
+    ============================================ -->
+    <div class="page-section" id="pageAbout">
+        <div class="about-content">
+            <h2>About</h2>
+            <p>
+                The <strong>Smart Patient Assistance and Staff Management System</strong> is a web-based
+                hospital management solution designed to improve communication between patients and staff.
+            </p>
+            <p>
+                Patients can send requests for Water, Medicine, Nurse Assistance, or Emergency Help
+                via web or physical ESP32 button panels. The system auto-prioritizes emergencies and tracks
+                every request from start to finish.
+            </p>
+            <div class="feature-grid">
+                <div class="feature-item"><h4>Emergency Priority</h4><p>Critical cases rise to the top</p></div>
+                <div class="feature-item"><h4>Real-time Dashboard</h4><p>See all active requests instantly</p></div>
+                <div class="feature-item"><h4>Staff Assignment</h4><p>Track who is helping whom</p></div>
+                <div class="feature-item"><h4>History & Logs</h4><p>Full audit trail of all actions</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+    CONTACT PAGE
+    ============================================ -->
+    <div class="page-section" id="pageContact">
+        <div class="contact-content">
+            <h2>Contact</h2>
+            <p>Have a question or need technical support? Reach out to our team.</p>
+            <div class="contact-info">
+                <div class="contact-item"><h4>Phone</h4><p>+91 98765 43210</p></div>
+                <div class="contact-item"><h4>Email</h4><p>admin@hospital.com</p></div>
+                <div class="contact-item"><h4>Location</h4><p>Ward Block, 2nd Floor</p></div>
+            </div>
+            <form class="contact-form" onsubmit="event.preventDefault(); alert('Message sent (demo).');">
+                <input type="text" placeholder="Your Name" required />
+                <input type="email" placeholder="Your Email" required />
+                <textarea placeholder="Your Message..." required></textarea>
+                <button type="submit" class="btn-submit">Send Message</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================
+    SETTINGS PAGE
+    ============================================ -->
+    <div class="page-section" id="pageSettings">
+        <div class="settings-content">
+            <h2>Settings</h2>
+
+            <div class="settings-group">
+                <h3>Appearance</h3>
+                <div class="theme-switch-wrapper">
+                    <label style="font-weight:500; cursor:pointer;">Dark Mode</label>
+                    <label class="theme-switch">
+                        <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(event)" />
+                        <span class="theme-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <h3>Notifications</h3>
+                <label><input type="checkbox" checked /> Enable push notifications</label>
+                <label><input type="checkbox" checked /> Sound alerts for emergencies</label>
+            </div>
+
+            <div class="settings-group">
+                <h3>Display</h3>
+                <label>Refresh rate:
+                    <select id="refreshRate">
+                        <option value="5">5 seconds</option>
+                        <option value="10" selected>10 seconds</option>
+                        <option value="30">30 seconds</option>
+                        <option value="60">60 seconds</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="settings-group">
+                <h3>Staff Management</h3>
+                <label><input type="checkbox" checked /> Auto-assign available staff</label>
+                <label><input type="checkbox" /> Send SMS to staff on emergency</label>
+            </div>
+
+            
+        </div>
+    </div>
+
+    <!-- ============================================
+    ACTIVITY LOGS SECTION
+    ============================================ -->
+    <div class="log-section">
+        <h3>
+            Activity Logs
+            <span class="log-actions">
+                <span onclick="loadActivityLogs()">Refresh</span>
+            </span>
+        </h3>
+        <div class="log-table-wrapper">
+            <table class="log-table" id="logTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Day</th>
+                        <th>Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody">
+                    <tr><td colspan="4" class="log-empty">Loading logs...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ============================================
+    EXTERNAL JAVASCRIPT
+    ============================================ -->
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+</body>
+</html>

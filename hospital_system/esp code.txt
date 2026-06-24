@@ -1,0 +1,343 @@
+esp code:
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <Keypad.h>
+#include <EEPROM.h>
+
+// ============================================
+//  WI-FI CREDENTIALS
+// ============================================
+const char* ssid = "Swayam's F15";
+const char* password = "spsthegreat";
+
+// ============================================
+//  FLASK SERVER
+// ============================================
+const char* serverUrl = "http://10.208.191.253:5000/api/esp/request";
+const char* statusUrl = "http://10.208.191.253:5000/api/esp/status";
+
+// ============================================
+//  EEPROM CONFIGURATION
+// ============================================
+const int EEPROM_SIZE = 10;
+const int ROOM_ADDR = 0;
+String ROOM_NUMBER = "205";
+
+// ============================================
+//  STATUS VARIABLES
+// ============================================
+bool roomActive = false;
+String patientName = "";
+unsigned long lastStatusCheck = 0;
+const unsigned long STATUS_CHECK_INTERVAL = 30000; // 30 seconds
+
+// ============================================
+//  KEYPAD CONFIGURATION
+// ============================================
+const byte ROWS = 4;
+const byte COLS = 4;
+
+char keys[ROWS][COLS] = {
+  {'1','2','3','A'},
+  {'4','5','6','B'},
+  {'7','8','9','C'},
+  {'*','0','#','D'}
+};
+
+byte rowPins[ROWS] = {13, 12, 14, 27};
+byte colPins[COLS] = {26, 25, 33, 32};
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+// ============================================
+//  SETUP MODE VARIABLES
+// ============================================
+bool setupMode = false;
+String inputRoom = "";
+
+// ============================================
+//  HARDCODED MAPPINGS (Based on your ESP32 readings)
+// ============================================
+
+// Map raw key → What you actually pressed (for display and typing)
+char getDisplayKey(char rawKey) {
+  switch(rawKey) {
+    case 'D': return '1';
+    case 'C': return '2';
+    case 'B': return '3';
+    case '#': return '4';   // Physical 4
+    case '9': return '5';
+    case '6': return '6';
+    case '0': return '7';
+    case '8': return '8';
+    case '5': return '9';
+    case '7': return '0';   // Physical 0
+    default: return rawKey; // A, *, etc.
+  }
+}
+
+// Map raw key → Request Type (for sending to Flask)
+String getRequestType(char rawKey) {
+  switch(rawKey) {
+    case 'D': return "Call Nurse";
+    case 'C': return "Food Request";
+    case 'B': return "Water Request";
+    case '#': return "Medicine Request";
+    case '9': return "Cleaning Request";
+    case '6': return "Wheelchair Assist";
+    case '0': return "Family Assist";
+    case '8': return "Tech Support";
+    case '5': return "EMERGENCY ALERT";
+    default: return "";
+  }
+}
+
+// ============================================
+//  EEPROM FUNCTIONS
+// ============================================
+void saveRoomNumber(String room) {
+  EEPROM.begin(EEPROM_SIZE);
+  for (int i = 0; i < room.length() && i < 9; i++) {
+    EEPROM.write(ROOM_ADDR + i, room[i]);
+  }
+  EEPROM.write(ROOM_ADDR + room.length(), '\0');
+  EEPROM.commit();
+  EEPROM.end();
+  Serial.println("💾 Room number saved: " + room);
+}
+
+String loadRoomNumber() {
+  EEPROM.begin(EEPROM_SIZE);
+  char room[10] = "";
+  for (int i = 0; i < 9; i++) {
+    char c = EEPROM.read(ROOM_ADDR + i);
+    if (c == '\0' || c == 0xFF) break;
+    room[i] = c;
+  }
+  EEPROM.end();
+  String result = String(room);
+  return result.length() > 0 ? result : "205";
+}
+
+// ============================================
+//  STATUS CHECK (with debug prints)
+// ============================================
+void checkRoomStatus() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("⚠️ Wi-Fi disconnected, cannot check status");
+    return;
+  }
+
+  HTTPClient http;
+  http.begin(statusUrl);
+  http.addHeader("Content-Type", "application/json");
+
+  String payload = "{\"room_no\": \"" + ROOM_NUMBER + "\"}";
+  int httpCode = http.POST(payload);
+  
+  if (httpCode > 0) {
+    String response = http.getString();
+    Serial.println("📥 Raw response: " + response);
+    
+    // Robust parsing
+    bool newActive = false;
+    String newPatient = "";
+    
+    // Check for "active":true with or without spaces
+    if (response.indexOf("\"active\":true") > 0 || response.indexOf("\"active\": true") > 0) {
+      newActive = true;
+    }
+    
+    // Extract patient name if present
+    int start = response.indexOf("\"patient_name\":\"");
+    if (start > 0) {
+      start += 16;  // length of "patient_name":"
+      int end = response.indexOf("\"", start);
+      newPatient = response.substring(start, end);
+    }
+    
+    roomActive = newActive;
+    patientName = newPatient;
+    
+    if (roomActive) {
+      Serial.print("✅ Room " + ROOM_NUMBER + " is ACTIVE");
+      if (patientName.length() > 0) {
+        Serial.print(" (Patient: " + patientName + ")");
+      }
+      Serial.println();
+    } else {
+      Serial.println("⛔ Room " + ROOM_NUMBER + " is INACTIVE - Access Denied");
+    }
+  } else {
+    Serial.println("❌ Failed to check status: HTTP " + String(httpCode));
+  }
+  http.end();
+}
+
+// ============================================
+//  SETUP
+// ============================================
+void setup() {
+  Serial.begin(115200);
+  Serial.println("=========================================");
+  Serial.println("  ESP32 Patient Request System (v2)");
+  Serial.println("=========================================");
+
+  ROOM_NUMBER = loadRoomNumber();
+  Serial.println("📌 Current Room: " + ROOM_NUMBER);
+  Serial.println("📋 Press '*' to change room number.");
+
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to Wi-Fi");
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 40) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n✅ Connected! IP: " + WiFi.localIP().toString());
+  } else {
+    Serial.println("\n❌ Wi-Fi connection failed!");
+  }
+  
+  // Initial status check
+  checkRoomStatus();
+  Serial.println("📡 Room " + ROOM_NUMBER + " ready");
+  Serial.println("Press keys 1-9 on the numpad.");
+  lastStatusCheck = millis();
+}
+
+// ============================================
+//  LOOP (with debug prints)
+// ============================================
+void loop() {
+  // Periodic status check
+  if (millis() - lastStatusCheck > STATUS_CHECK_INTERVAL) {
+    checkRoomStatus();
+    lastStatusCheck = millis();
+  }
+
+  char rawKey = keypad.getKey();
+  if (!rawKey) return;  // No key pressed
+
+  Serial.println("🔑 Key detected! Raw: " + String(rawKey));
+
+  // ============================================
+  //  PRESS '*' ONCE TO ENTER SETUP MODE
+  // ============================================
+  if (rawKey == '*' && !setupMode) {
+    setupMode = true;
+    inputRoom = "";
+    Serial.println("=========================================");
+    Serial.println("  SETUP MODE - Enter Room Number");
+    Serial.println("  Type the room number (e.g., 101)");
+    Serial.println("  Press 'A' to confirm or '*' to cancel");
+    Serial.println("=========================================");
+    return;
+  }
+
+  // ============================================
+  //  SETUP MODE - Collect Room Number
+  // ============================================
+  if (setupMode) {
+    if (rawKey == 'A') {
+      if (inputRoom.length() > 0) {
+        ROOM_NUMBER = inputRoom;
+        saveRoomNumber(ROOM_NUMBER);
+        Serial.println("✅ Room number set to: " + ROOM_NUMBER);
+        checkRoomStatus(); // Check status immediately
+        Serial.println("📡 Room " + ROOM_NUMBER + " ready");
+        setupMode = false;
+        inputRoom = "";
+      } else {
+        Serial.println("⚠️ Invalid room number. Try again.");
+      }
+      return;
+    }
+    
+    if (rawKey == '*') {
+      Serial.println("❌ Setup cancelled. Room remains: " + ROOM_NUMBER);
+      setupMode = false;
+      inputRoom = "";
+      return;
+    }
+
+    char display = getDisplayKey(rawKey);
+    if (display >= '0' && display <= '9') {
+      inputRoom += display;
+      Serial.print("📝 Current input: ");
+      Serial.println(inputRoom);
+    } else {
+      Serial.println("⏭️ Invalid key. Only 0-9, * (cancel), A (confirm)");
+    }
+    return;
+  }
+
+  // ============================================
+  //  NORMAL MODE - Check if Access is Granted
+  // ============================================
+  if (!roomActive) {
+    Serial.println("⛔ ACCESS DENIED - Room " + ROOM_NUMBER + " is inactive.");
+    delay(500);
+    return;
+  }
+
+  // ============================================
+  //  NORMAL MODE - Send Requests
+  // ============================================
+  char displayKey = getDisplayKey(rawKey);
+  Serial.print("🔘 You pressed: ");
+  Serial.print(displayKey);
+  
+  String requestType = getRequestType(rawKey);
+  if (requestType != "") {
+    Serial.print(" → Sending: ");
+    Serial.println(requestType);
+    sendRequest(requestType);
+  } else {
+    Serial.println(" → Ignored (unmapped key)");
+  }
+}
+
+// ============================================
+//  SEND REQUEST TO FLASK (with debug prints)
+// ============================================
+void sendRequest(String requestType) {
+  Serial.println("📤 Entering sendRequest()...");
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("❌ Wi-Fi disconnected");
+    return;
+  }
+
+  HTTPClient http;
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "application/json");
+
+  String payload = "{\"room_no\": \"" + ROOM_NUMBER + "\", \"request_type\": \"" + requestType + "\"}";
+  Serial.println("📦 Sending payload: " + payload);
+
+  int httpCode = http.POST(payload);
+  Serial.println("📥 HTTP response code: " + String(httpCode));
+  
+  if (httpCode > 0) {
+    String response = http.getString();
+    Serial.print("📥 Response body: ");
+    Serial.println(response);
+    
+    if (httpCode == 201) {
+      Serial.println("✅ Request sent to staff!");
+    } else if (httpCode == 409) {
+      Serial.println("⚠️ A request is already in progress for this room!");
+    } else {
+      Serial.println("⚠️ Server returned error: " + String(httpCode));
+    }
+  } else {
+    Serial.println("❌ HTTP error: " + String(httpCode));
+    Serial.println("   Check: 1) Server IP is correct");
+    Serial.println("   Check: 2) Flask is running");
+    Serial.println("   Check: 3) ESP32 and PC are on the same network");
+  }
+  http.end();
+}

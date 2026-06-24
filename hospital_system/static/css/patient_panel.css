@@ -1,0 +1,172 @@
+:root {
+    --bg-body: #0f172a;
+    --bg-card: #1e293b;
+    --bg-input: #2d3a4e;
+    --bg-hover: #2d3a4e;
+    --text-primary: #e2e8f0;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --border-color: #334155;
+    --shadow: 0 2px 12px rgba(0,0,0,0.4);
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-orange: #f59e0b;
+    --accent-blue: #3b82f6;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg-body);
+    color: var(--text-secondary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.panel-container {
+    max-width: 520px;
+    width: 100%;
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 28px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border-color);
+}
+
+.panel-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.panel-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+}
+
+.panel-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* ---- Screen ---- */
+.screen {
+    background: var(--bg-input);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.screen-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.screen-row:last-child { border-bottom: none; }
+
+.screen-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+}
+
+.screen-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+#statusDisplay.idle { color: var(--text-muted); }
+#statusDisplay.active { color: var(--accent-orange); }
+#statusDisplay.emergency { color: var(--accent-red); }
+#statusDisplay.completed { color: var(--accent-green); }
+
+/* ---- Service Grid (Passive) ---- */
+.service-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.service-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 8px;
+    color: var(--text-secondary);
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: default;
+    user-select: none;
+    opacity: 0.6;
+    transition: 0.3s;
+}
+
+.service-btn .key-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.service-btn .key-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* Active state – highlighted */
+.service-btn.active {
+    border-color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.15);
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+.service-btn.active .key-number { color: var(--accent-green); }
+.service-btn.active .key-label { color: var(--text-secondary); }
+
+/* Emergency active (key 9) */
+.service-btn.emergency.active {
+    border-color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+}
+.service-btn.emergency.active .key-number { color: var(--accent-red); }
+
+/* ---- Status LED ---- */
+.status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+}
+.led {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green);
+    transition: 0.5s;
+}
+.led.busy { background: var(--accent-orange); box-shadow: 0 0 12px var(--accent-orange); }
+.led.emergency { background: var(--accent-red); box-shadow: 0 0 16px var(--accent-red); }
+.status-text {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    font-weight: 500;
+}

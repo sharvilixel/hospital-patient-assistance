@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Patient Monitor – Room {{ room_no }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patient_panel.css') }}">
+</head>
+<body>
+
+    <div class="panel-container">
+        <!-- Header -->
+        <div class="panel-header">
+            <div class="panel-title">Patient Monitor</div>
+            <div class="panel-subtitle">Room {{ room_no }}</div>
+        </div>
+
+        <!-- Screen -->
+        <div class="screen">
+            <div class="screen-row">
+                <span class="screen-label">Room</span>
+                <span class="screen-value" id="roomDisplay">{{ room_no }}</span>
+            </div>
+            <div class="screen-row">
+                <span class="screen-label">Patient</span>
+                <span class="screen-value" id="patientNameDisplay">--</span>
+            </div>
+            <div class="screen-row">
+                <span class="screen-label">Request</span>
+                <span class="screen-value" id="statusDisplay">Idle</span>
+            </div>
+        </div>
+
+        <!-- Service Buttons (1-9) – Hardcoded, Passive -->
+        <div class="service-grid" id="serviceGrid">
+            <!-- 1 -->
+            <div class="service-btn" id="btn-1">
+                <span class="key-number">1</span>
+                <span class="key-label">Call Nurse</span>
+            </div>
+            <!-- 2 -->
+            <div class="service-btn" id="btn-2">
+                <span class="key-number">2</span>
+                <span class="key-label">Water Request</span>
+            </div>
+            <!-- 3 -->
+            <div class="service-btn" id="btn-3">
+                <span class="key-number">3</span>
+                <span class="key-label">Food Request</span>
+            </div>
+            <!-- 4 -->
+            <div class="service-btn" id="btn-4">
+                <span class="key-number">4</span>
+                <span class="key-label">Medicine Request</span>
+            </div>
+            <!-- 5 -->
+            <div class="service-btn" id="btn-5">
+                <span class="key-number">5</span>
+                <span class="key-label">Cleaning Request</span>
+            </div>
+            <!-- 6 -->
+            <div class="service-btn" id="btn-6">
+                <span class="key-number">6</span>
+                <span class="key-label">Wheelchair Assist</span>
+            </div>
+            <!-- 7 -->
+            <div class="service-btn" id="btn-7">
+                <span class="key-number">7</span>
+                <span class="key-label">Family Assist</span>
+            </div>
+            <!-- 8 -->
+            <div class="service-btn" id="btn-8">
+                <span class="key-number">8</span>
+                <span class="key-label">Tech Support</span>
+            </div>
+            <!-- 9 (Emergency) -->
+            <div class="service-btn emergency" id="btn-9">
+                <span class="key-number">9</span>
+                <span class="key-label">EMERGENCY ALERT</span>
+            </div>
+        </div>
+
+        <!-- Status LED -->
+        <div class="status-bar">
+            <div class="led" id="led"></div>
+            <span class="status-text" id="statusText">Connected</span>
+        </div>
+    </div>
+
+    <script>
+        const ROOM_NO = "{{ room_no }}";
+        const API_BASE = '/api';
+    </script>
+    <script src="{{ url_for('static', filename='js/patient_panel.js') }}"></script>
+</body>
+</html>

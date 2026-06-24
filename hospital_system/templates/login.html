@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Staff Login Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+<div class="container">
+    <h1>Staff Login Portal</h1>
+    <div class="form-box">
+        <h2>Staff Access</h2>
+
+        <input type="text" id="staffName" placeholder="Full Name" />
+        
+        <!-- REPLACE DROPDOWN WITH TEXT INPUT -->
+        <input type="text" id="staffRole" placeholder="Staff Role (e.g., Doctor, Nurse)" />
+        
+        <input type="text" id="staffDepartment" placeholder="Department (e.g., Cardiology)" />
+        <input type="password" id="staffPassword" placeholder="Password" />
+
+        <div class="btn-group">
+            <button class="login-btn" onclick="staffLogin()">Login</button>
+            <button class="signup-btn" onclick="staffSignup()">Sign Up</button>
+        </div>
+
+        <div id="staffMessage" class="message"></div>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>
